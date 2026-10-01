@@ -9,3 +9,8 @@ app = FastAPI(
 )
 
 app.include_router(generate_router)
+
+
+@app.get("/")
+def home():
+    return {"message": "GenAI API is running"}
