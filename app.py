@@ -1,19 +1,34 @@
-from fastapi import FastAPI
-from pydantic import BaseModel
+
+from fastapi import FastAPI, HTTPException
+from pydantic import BaseModel, Field
 import ollama
 
-app = FastAPI(title="GenAI Day 1 API")
+# Create the FastAPI application
+app = FastAPI(
+    title="GenAI Day 1 API",
+    description="Generate AI responses using FastAPI and Ollama",
+    version="1.0.0"
+)
 
 
-# Request format
+# Request model: validates incoming data
 class GenerateRequest(BaseModel):
-    text: str
+    text: str = Field(
+        ...,
+        min_length=1,
+        description="Text or question to send to the AI"
+    )
 
 
-# AI function
-def generate_response(text: str):
+# Response model: defines the JSON response
+class GenerateResponse(BaseModel):
+    input: str
+    response: str
 
-    response = ollama.chat(
+
+# AI service: communicates with the local Llama model
+def generate_response(text: str) -> str:
+    result = ollama.chat(
         model="llama3.2",
         messages=[
             {
@@ -23,16 +38,34 @@ def generate_response(text: str):
         ]
     )
 
-    return response["message"]["content"]
+    return result["message"]["content"]
 
 
-# POST endpoint
-@app.post("/generate")
+# POST API endpoint
+@app.post(
+    "/generate",
+    response_model=GenerateResponse
+)
 def generate(request: GenerateRequest):
+    try:
+        answer = generate_response(request.text)
 
-    result = generate_response(request.text)
+        return GenerateResponse(
+            input=request.text,
+            response=answer
+        )
 
+    except Exception as error:
+        raise HTTPException(
+            status_code=503,
+            detail=f"AI service error: {str(error)}"
+        )
+
+
+# Health-check endpoint
+@app.get("/")
+def home():
     return {
-        "input": request.text,
-        "response": result
+        "message": "GenAI API is running",
+        "docs": "/docs"
     }
