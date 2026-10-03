@@ -1,6 +1,7 @@
-
 from fastapi import FastAPI
+
 from app.routes.generate import router as generate_router
+from app.routes.prompt import router as prompt_router
 
 app = FastAPI(
     title="GenAI API",
@@ -8,7 +9,9 @@ app = FastAPI(
     version="1.0.0",
 )
 
+# Register routers
 app.include_router(generate_router)
+app.include_router(prompt_router)
 
 
 @app.get("/")
